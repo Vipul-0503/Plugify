@@ -1,0 +1,7 @@
+flask>=3.0
+flask-cors>=4.0
+numpy>=1.26
+sentence-transformers>=2.7  
+google-generativeai>=0.5     
+gunicorn>=21.0               # production server
+pytest>=8.0                  # testing

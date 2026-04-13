@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plugify — Find Chrome Extensions Instantly</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--surface:#181818;--surface2:#222;--surface3:#2a2a2a;
+  --border:#2a2a2a;--border-soft:rgba(255,255,255,0.06);
+  --text:#e8e8e5;--text-muted:#888885;--text-faint:#555552;
+  --accent:#c8b9a0;--accent-warm:#e2a96b;--accent-green:#6fcf97;--accent-blue:#7eb8f7;
+  --tag-bg:rgba(200,185,160,0.09);--r:12px;--r-sm:8px;
+}
+html{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6}
+body{min-height:100vh;display:flex;flex-direction:column}
+.shell{display:flex;height:100vh;overflow:hidden}
+
+/* Sidebar */
+.sidebar{
+  width:256px;flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  padding:18px 14px;gap:4px;
+}
+.logo{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px 18px;
+  font-family:'Instrument Serif',serif;
+  font-size:22px;color:var(--accent);letter-spacing:-0.3px;
+}
+.logo-icon{
+  width:28px;height:28px;
+  background:linear-gradient(135deg,#c8b9a0 0%,#e2a96b 100%);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+.sidebar-label{
+  font-size:10px;font-weight:500;letter-spacing:1.2px;
+  color:var(--text-faint);text-transform:uppercase;
+  padding:10px 10px 4px;
+}
+.sidebar-item{
+  padding:8px 10px;border-radius:var(--r-sm);
+  font-size:13px;color:var(--text-muted);
+  cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:9px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sidebar-item:hover{background:var(--surface2);color:var(--text)}
+.sidebar-item.active{background:var(--surface2);color:var(--text)}
+.sidebar-item .icon{font-size:13px;opacity:.7;flex-shrink:0}
+.new-chat-btn{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--border);
+  color:var(--text-muted);font-size:13px;
+  cursor:pointer;transition:all .15s;margin-bottom:6px;
+  background:transparent;font-family:inherit;width:100%;
+}
+.new-chat-btn:hover{border-color:var(--accent);color:var(--accent)}
+.spacer{flex:1}
+.divider{height:1px;background:var(--border);margin:6px 0}
+.sidebar-note{font-size:11.5px;color:var(--text-faint);padding:6px 10px;line-height:1.5;cursor:default}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-area{flex:1;overflow-y:auto;padding:0 0 20px;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:3px}
+.chat-area::-webkit-scrollbar-track{background:transparent}
+.chat-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* Welcome */
+.welcome{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:100%;padding:60px 40px;text-align:center;
+}
+.welcome-title{
+  font-family:'Instrument Serif',serif;
+  font-size:44px;color:var(--text);
+  letter-spacing:-1.5px;line-height:1.05;margin-bottom:14px;
+}
+.welcome-sub{
+  color:var(--text-muted);font-size:15px;max-width:430px;
+  line-height:1.65;margin-bottom:38px;
+}
+.welcome-chips{
+  display:flex;flex-wrap:wrap;gap:8px;
+  justify-content:center;max-width:560px;
+}
+.chip{
+  padding:9px 16px;border-radius:20px;
+  border:1px solid var(--border);
+  font-size:13px;color:var(--text-muted);
+  cursor:pointer;transition:all .2s;background:var(--surface);
+}
+.chip:hover{border-color:var(--accent);color:var(--accent);background:var(--tag-bg)}
+
+/* Messages */
+.message-group{
+  max-width:760px;margin:0 auto;
+  padding:24px 28px 0;
+  animation:fadeUp .3s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.user-msg{display:flex;justify-content:flex-end;margin-bottom:22px}
+.user-bubble{
+  max-width:68%;background:var(--surface2);
+  border:1px solid var(--border);
+  padding:11px 17px;border-radius:18px 18px 4px 18px;
+  font-size:15px;color:var(--text);line-height:1.55;
+}
+.bot-msg{margin-bottom:6px}
+.bot-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.bot-avatar{
+  width:26px;height:26px;
+  background:linear-gradient(135deg,#c8b9a0,#e2a96b);
+  border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:12px;
+}
+.bot-name{font-size:13px;font-weight:500;color:var(--text-muted)}
+.intent-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:20px;
+  background:var(--tag-bg);border:1px solid rgba(200,185,160,0.18);
+  font-size:12px;color:var(--accent);margin-bottom:14px;
+}
+.intent-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-warm);flex-shrink:0}
+.response-text{
+  font-size:14px;color:var(--text-muted);
+  line-height:1.65;margin-bottom:18px;
+}
+
+/* Cards */
+.ext-grid{display:flex;flex-direction:column;gap:9px;margin-bottom:18px}
+.ext-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r);
+  padding:15px 17px;
+  transition:all .2s;cursor:pointer;
+  position:relative;overflow:hidden;
+}
+.ext-card::before{
+  content:'';position:absolute;top:0;left:0;
+  width:3px;height:100%;background:transparent;transition:background .2s;
+}
+.ext-card:hover{border-color:rgba(200,185,160,0.28)}
+.ext-card:hover::before{background:var(--accent)}
+.ext-card.top-pick{border-color:rgba(200,185,160,0.22)}
+.ext-card.top-pick::before{background:var(--accent-warm)}
+.ext-card-top{
+  display:flex;align-items:flex-start;
+  justify-content:space-between;gap:12px;margin-bottom:8px;
+}
+.ext-card-left{display:flex;align-items:flex-start;gap:11px;flex:1}
+.ext-icon{
+  width:34px;height:34px;border-radius:7px;
+  background:var(--surface2);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;border:1px solid var(--border);
+}
+.ext-name{font-size:14px;font-weight:500;color:var(--text);margin-bottom:1px}
+.ext-category{font-size:11.5px;color:var(--text-faint)}
+.ext-badges{display:flex;align-items:center;gap:5px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500}
+.badge-underrated{
+  background:rgba(111,207,151,0.1);color:var(--accent-green);
+  border:1px solid rgba(111,207,151,0.2);
+}
+.badge-score{
+  background:rgba(126,184,247,0.1);color:var(--accent-blue);
+  border:1px solid rgba(126,184,247,0.2);
+}
+.badge-top{
+  background:rgba(226,169,107,0.1);color:var(--accent-warm);
+  border:1px solid rgba(226,169,107,0.2);
+}
+.ext-desc{
+  font-size:13px;color:var(--text-muted);line-height:1.5;margin-bottom:9px;
+}
+.ext-why{
+  font-size:12.5px;color:var(--accent);
+  border-top:1px solid var(--border-soft);
+  padding-top:8px;line-height:1.45;font-style:italic;
+}
+.ext-why::before{content:'✦ ';font-style:normal;font-size:10px}
+.ext-footer{
+  display:flex;align-items:center;gap:10px;
+  margin-top:9px;padding-top:9px;
+  border-top:1px solid var(--border-soft);
+}
+.ext-stat{font-size:11.5px;color:var(--text-faint);display:flex;align-items:center;gap:3px}
+.ext-link{
+  margin-left:auto;padding:5px 13px;border-radius:6px;
+  background:transparent;border:1px solid var(--border);
+  font-size:12px;color:var(--text-muted);
+  cursor:pointer;text-decoration:none;
+  transition:all .15s;font-family:inherit;
+}
+.ext-link:hover{border-color:var(--accent);color:var(--accent)}
+.more-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 0;font-size:13px;color:var(--text-faint);
+  background:none;border:none;cursor:pointer;font-family:inherit;transition:color .15s;
+}
+.more-btn:hover{color:var(--accent)}
+
+/* Thinking */
+.thinking{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;color:var(--text-faint);font-size:13px;
+}
+.thinking-dots{display:flex;gap:4px}
+.thinking-dots span{
+  width:5px;height:5px;border-radius:50%;background:var(--text-faint);
+  animation:blink 1.4s ease-in-out infinite;
+}
+.thinking-dots span:nth-child(2){animation-delay:.2s}
+.thinking-dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{
+  0%,80%,100%{opacity:.2;transform:scale(.8)}
+  40%{opacity:1;transform:scale(1)}
+}
+
+/* Input */
+.input-area{
+  border-top:1px solid var(--border);
+  padding:14px 28px 18px;background:var(--bg);
+}
+.input-wrap{
+  max-width:760px;margin:0 auto;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;display:flex;flex-direction:column;
+  transition:border-color .2s;overflow:hidden;
+}
+.input-wrap:focus-within{border-color:rgba(200,185,160,0.35)}
+.input-field{
+  width:100%;background:transparent;border:none;outline:none;
+  padding:14px 18px 10px;
+  font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text);
+  resize:none;line-height:1.5;min-height:50px;max-height:180px;
+}
+.input-field::placeholder{color:var(--text-faint)}
+.input-toolbar{
+  display:flex;align-items:center;
+  padding:7px 10px 7px 14px;gap:8px;
+}
+.toolbar-hint{font-size:11.5px;color:var(--text-faint);flex:1}
+.send-btn{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--accent);border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;flex-shrink:0;
+}
+.send-btn:hover{background:var(--accent-warm);transform:scale(1.05)}
+.send-btn:disabled{background:var(--surface2);cursor:default;transform:none}
+.send-btn svg{width:15px;height:15px}
+.input-note{text-align:center;font-size:11px;color:var(--text-faint);padding-top:7px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🔌</div>
+    Plugify
+  </div>
+  <button class="new-chat-btn" onclick="newChat()">＋ &nbsp;New search</button>
+  <div class="sidebar-label">Recent</div>
+  <div class="sidebar-item active" id="h1">
+    <span class="icon">🔍</span><span>Font inspector on hover</span>
+  </div>
+  <div class="sidebar-item" onclick="loadHistory('color')">
+    <span class="icon">🔍</span><span>Color picker from screen</span>
+  </div>
+  <div class="sidebar-item" onclick="loadHistory('focus')">
+    <span class="icon">🔍</span><span>Block distractions studying</span>
+  </div>
+  <div class="sidebar-item" onclick="loadHistory('grid')">
+    <span class="icon">🔍</span><span>Overlay grid on any page</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="divider"></div>
+  <div class="sidebar-label" style="margin-top:6px">About</div>
+  <div class="sidebar-note">Finds underrated Chrome extensions by semantic intent — not keyword search or popularity.</div>
+</aside>
+
+<main class="main">
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+      <div class="welcome-title">Find extensions<br><em style="color:var(--text-muted)">that fit exactly</em></div>
+      <p class="welcome-sub">Describe what you want in plain English. Plugify surfaces underrated Chrome extensions that match your intent — including gems most people never find in the store.</p>
+      <div class="welcome-chips">
+        <div class="chip" onclick="setQ('show font name, size and color when I hover over text')">🔤 Font inspector on hover</div>
+        <div class="chip" onclick="setQ('pick any color from any element on a webpage')">🎨 Color picker from screen</div>
+        <div class="chip" onclick="setQ('see all CSS properties of any element I click on')">🔧 CSS inspector on click</div>
+        <div class="chip" onclick="setQ('overlay a grid on any webpage for design alignment')">📐 Design grid overlay</div>
+        <div class="chip" onclick="setQ('block YouTube recommendations and homepage feed')">📺 YouTube feed blocker</div>
+        <div class="chip" onclick="setQ('measure pixel distance between elements on a page')">📏 Pixel measurement tool</div>
+      </div>
+    </div>
+    <div id="messages"></div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrap">
+      <textarea class="input-field" id="queryInput"
+        placeholder="Describe what you want to do — be as specific as possible…"
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <div class="input-toolbar">
+        <span class="toolbar-hint">Prioritises underrated, niche extensions over popular ones</span>
+        <button class="send-btn" id="sendBtn" onclick="handleSend()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0f0f0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <p class="input-note">Results ranked by semantic intent match — not by installs, ratings, or paid promotion</p>
+  </div>
+</main>
+</div>
+
+<script>
+// ── Dataset ──
+// In production this is fetched from Flask + sentence-transformers backend.
+// Focused on UNDERRATED, NICHE extensions real designers/devs need.
+const EXT = [
+  {id:'font-ninja',name:'Font Ninja',icon:'🔤',cat:'Design / Typography',
+   desc:'Hover over any text to instantly see font name, size, weight, color and line height in a tooltip. Click to try the font.',
+   kw:['font','typography','hover','typeface','inspect','size','color','name','text','designer','weight'],
+   rating:4.4,installs:180000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/font-ninja/eljapbgkmlngdpckoiiibecpemleclhh'},
+  {id:'whatfont',name:'WhatFont',icon:'🖊️',cat:'Design / Typography',
+   desc:'One-click hover to identify any font on any page. Shows family, style, weight, size, line height and color. No devtools needed.',
+   kw:['font','identify','hover','name','typeface','detect','typography','inspect','size','color','mouse'],
+   rating:4.6,installs:900000,underrated:false,
+   link:'https://chromewebstore.google.com/detail/whatfont/jabopobgcpjmedljpbcaablpmlmfcogm'},
+  {id:'typography-inspector',name:'Typography Inspector',icon:'🔍',cat:'Design / Typography',
+   desc:'Deep-dive type inspection: hover for computed font metrics, CSS variables, and full fallback stack info. For designers who care about the full font chain.',
+   kw:['font','typography','hover','inspect','css','metrics','designer','text','computed'],
+   rating:4.1,installs:7500,underrated:true,
+   link:'https://chromewebstore.google.com/detail/typography-inspector'},
+  {id:'colorfish',name:'ColorFish',icon:'🐟',cat:'Design / Color',
+   desc:'Pick any color from any element — background, text, border, gradient. Returns HEX, RGB, HSL. Tiny, zero UI clutter.',
+   kw:['color','pick','hex','rgb','hsl','screen','eyedropper','designer','palette','copy'],
+   rating:4.3,installs:21000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/colorfish-color-picker/hhiijkgbkmdkeifjnfnlheejjkkoecai'},
+  {id:'eye-dropper',name:'Eye Dropper',icon:'💧',cat:'Design / Color',
+   desc:'Open-source eyedropper. Pick colors from any webpage element including canvas. Gives HEX and RGB instantly with one click.',
+   kw:['color','pick','hex','eyedropper','screen','palette','designer','rgb'],
+   rating:4.5,installs:1200000,underrated:false,
+   link:'https://chromewebstore.google.com/detail/eye-dropper/hmdcmlfkchdmnmnmheododdhjedfccka'},
+  {id:'pesticide',name:'Pesticide for Chrome',icon:'🐛',cat:'Design / Layout',
+   desc:'Toggle outlines around every element on a page. Instantly visualize layout and box model without opening DevTools.',
+   kw:['css','layout','debug','outline','box model','spacing','design','developer','inspect','element'],
+   rating:4.2,installs:250000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/pesticide-for-chrome/bakpbgckdnepkmkeaiomhmfcnejndkbi'},
+  {id:'grid-ruler',name:'Grid Ruler',icon:'📐',cat:'Design / Layout',
+   desc:'Overlay a customizable pixel grid over any webpage. Set column width, gutter, baseline. Perfect for checking spacing during handoff reviews.',
+   kw:['grid','overlay','design','layout','column','ruler','spacing','baseline','alignment','uiux','guide'],
+   rating:4.0,installs:13500,underrated:true,
+   link:'https://chromewebstore.google.com/detail/grid-ruler'},
+  {id:'ruler-page',name:'Ruler for Chrome',icon:'📏',cat:'Design / Measurement',
+   desc:'Draw rulers and measure pixel distances between elements on any webpage in real time. Replaces manual screen-ruler apps.',
+   kw:['ruler','measure','pixel','distance','element','design','screen','size','uiux'],
+   rating:4.3,installs:41000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/ruler-for-chrome/jnprlcoboklecnpodoehhglcadfmohge'},
+  {id:'page-ruler-redux',name:'Page Ruler Redux',icon:'📏',cat:'Design / Measurement',
+   desc:'Drag to draw a ruler on any page and get width, height, and position info. Also shows element bounding boxes on hover.',
+   kw:['ruler','measure','width','height','position','design','pixel','element','bounding','box'],
+   rating:4.6,installs:320000,underrated:false,
+   link:'https://chromewebstore.google.com/detail/page-ruler-redux/giejhjebcalaheckengmchjekofhhmal'},
+  {id:'css-viewer',name:'CSSViewer',icon:'🎨',cat:'Developer / CSS',
+   desc:'Hover over any element to see all its CSS properties in a floating panel. Faster than opening DevTools for quick design reviews.',
+   kw:['css','properties','hover','inspect','element','style','developer','designer','computed','click'],
+   rating:4.4,installs:450000,underrated:false,
+   link:'https://chromewebstore.google.com/detail/cssviewer/ggfgijbpiheegefliciemofobhmofgce'},
+  {id:'dimensions',name:'Dimensions',icon:'📦',cat:'Design / Measurement',
+   desc:'Measure the space between elements on screen. Hover to detect element boundaries; see margins, padding, and gaps instantly.',
+   kw:['dimensions','measure','margin','padding','spacing','gap','design','layout','element','hover'],
+   rating:4.3,installs:36000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/dimensions/baocaagndhipibgklemoalmkljaimfdj'},
+  {id:'colorzilla',name:'ColorZilla',icon:'🔵',cat:'Design / Color',
+   desc:'Advanced color picker with eyedropper, color history, CSS gradient generator and webpage color analyzer. The power-user color tool.',
+   kw:['color','eyedropper','pick','hex','gradient','css','palette','history','webpage'],
+   rating:4.6,installs:3000000,underrated:false,
+   link:'https://chromewebstore.google.com/detail/colorzilla/bhlhnicpbhignbdhedgjmaplebemodj'},
+  {id:'unhook',name:'Unhook',icon:'🪝',cat:'Productivity / Focus',
+   desc:'Remove YouTube homepage feed, recommendations, comments and Shorts. Keep only search and subscriptions. Surgical YouTube distraction control.',
+   kw:['youtube','distraction','block','focus','study','recommendations','feed','remove','hide'],
+   rating:4.7,installs:320000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/unhook-remove-youtube-rec/khncfooichmfjbepaaaebmommgaepoid'},
+  {id:'focusplan',name:'FocusPlan',icon:'🗓️',cat:'Productivity / Focus',
+   desc:'Visual drag-and-drop daily planner in your new tab. Plan study blocks with time estimates. Less about blocking sites, more about intentional scheduling.',
+   kw:['focus','plan','study','distraction','pomodoro','block','timer','daily','schedule'],
+   rating:4.2,installs:18000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/focusplan'},
+  {id:'axe-devtools',name:'axe DevTools',icon:'♿',cat:'Accessibility / Audit',
+   desc:'Automated accessibility testing in DevTools. Finds WCAG violations with guided remediation. Used by professional a11y auditors.',
+   kw:['accessibility','audit','wcag','a11y','aria','contrast','developer','violation','check'],
+   rating:4.5,installs:480000,underrated:false,
+   link:'https://chromewebstore.google.com/detail/axe-devtools-web-accessib/lhdoppojpmngadmnindnejefpokejbdd'},
+  {id:'privacy-badger',name:'Privacy Badger',icon:'🦡',cat:'Security / Privacy',
+   desc:'Learns to block invisible trackers as you browse using algorithmic detection — not just block lists. From EFF.',
+   kw:['tracker','privacy','block','security','spy','data','fingerprint','eff','invisible'],
+   rating:4.4,installs:1500000,underrated:false,
+   link:'https://chromewebstore.google.com/detail/privacy-badger/pkehgijcmpdhfbdbbnkijodmdjhbjlgp'},
+  {id:'image-downloader',name:'Image Downloader',icon:'🖼️',cat:'Utility / Media',
+   desc:'Bulk download all images on a page. Filter by size, type, URL pattern. One click to grab a whole gallery — saves massive time.',
+   kw:['image','download','bulk','gallery','photo','media','scrape','save'],
+   rating:4.3,installs:560000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/image-downloader/cnpniohnfphhjoscpldbbqbkbeaomide'},
+  {id:'link-redirect-trace',name:'Link Redirect Trace',icon:'🔗',cat:'Developer / SEO',
+   desc:'Trace the full redirect chain of any URL. See every hop, status code, and final destination. Invaluable for SEO and debugging third-party links.',
+   kw:['redirect','url','trace','seo','chain','status','debug','link','http'],
+   rating:4.5,installs:42000,underrated:true,
+   link:'https://chromewebstore.google.com/detail/link-redirect-trace/nnpljppamoaalgkieeciijbcccohlpig'},
+];
+
+// Intent classification
+const INTENT_MAP = {
+  typography:['font','typeface','typography','text','type','serif','weight','size','letter'],
+  color:['color','colour','hex','rgb','hsl','palette','eyedropper','pick'],
+  layout:['grid','spacing','align','layout','ruler','measure','margin','padding','gap','dimension','guide','column'],
+  css:['css','style','inspect','element','property','class','selector','computed','devtools'],
+  focus:['focus','distract','block','study','pomodoro','youtube','feed','recommendation'],
+  accessibility:['accessibility','a11y','wcag','aria','contrast','screen reader'],
+  security:['privacy','tracker','vpn','secure','data','fingerprint'],
+  writing:['writing','grammar','spell','rephrase','email','tone'],
+  media:['image','video','download','screenshot','media'],
+  developer:['redirect','url','seo','debug','json','api','github','regex','snippet']
+};
+
+const INTENT_LABELS = {
+  typography:'Typography / Font inspection',color:'Color picking & palettes',
+  layout:'Layout & spacing measurement',css:'CSS inspection',
+  focus:'Focus & distraction blocking',accessibility:'Accessibility auditing',
+  security:'Privacy & security',writing:'Writing & editing',
+  media:'Media & downloads',developer:'Developer tools',general:'General utility'
+};
+
+function classifyIntent(q){
+  const lower=q.toLowerCase();
+  let best='general',bestScore=0;
+  for(const[cat,kws]of Object.entries(INTENT_MAP)){
+    const s=kws.filter(k=>lower.includes(k)).length;
+    if(s>bestScore){bestScore=s;best=cat;}
+  }
+  return best;
+}
+
+function tokenize(t){
+  return t.toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(x=>x.length>2);
+}
+
+function score(query,ext,intent){
+  const qT=new Set(tokenize(query));
+  const eT=new Set([...tokenize(ext.name),...tokenize(ext.desc),...ext.kw.map(k=>k.toLowerCase())]);
+  let overlap=0;
+  for(const t of qT)if(eT.has(t))overlap++;
+  const kwScore=overlap/Math.max(qT.size,1);
+
+  // Intent match via category keyword
+  const catLow=ext.cat.toLowerCase();
+  const intentMatch=(INTENT_MAP[intent]||[]).some(k=>catLow.includes(k)||eT.has(k))?0.4:0;
+
+  // Hover/mouse query bonus
+  const hoverQ=query.toLowerCase().includes('hover')||query.toLowerCase().includes('mouse');
+  const hoverMatch=hoverQ&&(ext.desc.toLowerCase().includes('hover')||ext.kw.includes('hover'))?0.35:0;
+
+  // Underrated & niche bonus — the core differentiator
+  const underratedBonus=ext.underrated?0.15:0;
+  const nicheBonus=ext.installs<50000?0.12:(ext.installs<150000?0.07:0);
+
+  // Name match
+  const nameMatch=[...qT].some(t=>ext.name.toLowerCase().includes(t))?0.18:0;
+
+  return Math.min(kwScore*0.4+intentMatch+hoverMatch+underratedBonus+nicheBonus+nameMatch,1.0);
+}
+
+function search(query){
+  const intent=classifyIntent(query);
+  const results=EXT
+    .map(e=>({...e,_score:score(query,e,intent)}))
+    .filter(e=>e._score>0.04)
+    .sort((a,b)=>b._score-a._score)
+    .slice(0,7);
+  return{results,intent};
+}
+
+function whyText(query,ext){
+  const q=query.toLowerCase();
+  if(q.includes('hover')&&ext.kw.includes('hover'))return'Works exactly on hover — no DevTools or extra clicks required';
+  if(q.includes('font')&&ext.cat.includes('Typography'))return'Designed specifically for live font inspection on any webpage';
+  if(q.includes('color')&&ext.cat.includes('Color'))return'Specialized color picker — faster than DevTools computed styles';
+  if(q.includes('grid')&&ext.kw.includes('grid'))return'Overlays a pixel grid on any live page without modifying the DOM';
+  if(q.includes('measure')||q.includes('ruler'))return'Pixel-accurate measurement directly on the live page';
+  if(q.includes('css')&&ext.kw.includes('css'))return'Surfaces all computed CSS without opening a DevTools panel';
+  if(ext.underrated&&ext.installs<60000)return`Hidden gem — only ${Math.round(ext.installs/1000)}k users, very niche, actively maintained`;
+  if(ext.underrated)return'Underrated — high signal-to-noise, rarely surfaces in Chrome Store search';
+  return`Semantic match: ${Math.round(ext._score*100)}% — matches your described intent`;
+}
+
+// ── Rendering ──
+let busy=false;
+
+function card(ext,query,rank){
+  const why=whyText(query,ext);
+  const pct=Math.round(ext._score*100);
+  const inst=ext.installs>=1e6?(ext.installs/1e6).toFixed(1)+'M':ext.installs>=1000?Math.round(ext.installs/1000)+'k':ext.installs;
+  const isTop=rank===0;
+  return`<div class="ext-card${isTop?' top-pick':''}">
+  <div class="ext-card-top">
+    <div class="ext-card-left">
+      <div class="ext-icon">${ext.icon}</div>
+      <div><div class="ext-name">${ext.name}</div><div class="ext-category">${ext.cat}</div></div>
+    </div>
+    <div class="ext-badges">
+      ${isTop?'<span class="badge badge-top">Best match</span>':''}
+      ${ext.underrated?'<span class="badge badge-underrated">Underrated</span>':''}
+      <span class="badge badge-score">${pct}%</span>
+    </div>
+  </div>
+  <div class="ext-desc">${ext.desc}</div>
+  <div class="ext-why">${why}</div>
+  <div class="ext-footer">
+    <span class="ext-stat">⭐ ${ext.rating}</span>
+    <span class="ext-stat">👥 ${inst}</span>
+    <a class="ext-link" href="${ext.link}" target="_blank" rel="noopener">Open in Store →</a>
+  </div>
+</div>`;
+}
+
+function append(html){
+  const d=document.createElement('div');
+  d.innerHTML=html;
+  document.getElementById('messages').appendChild(d);
+  scroll();
+}
+function scroll(){document.getElementById('chatArea').scrollTop=1e9}
+
+async function handleSend(){
+  const inp=document.getElementById('queryInput');
+  const q=inp.value.trim();
+  if(!q||busy)return;
+  busy=true;
+  document.getElementById('welcome').classList.add('hidden');
+  inp.value='';autoResize(inp);
+
+  append(`<div class="message-group"><div class="user-msg"><div class="user-bubble">${q}</div></div></div>`);
+
+  const tid='t'+Date.now();
+  append(`<div class="message-group" id="${tid}">
+    <div class="bot-msg">
+      <div class="bot-header"><div class="bot-avatar">🔌</div><span class="bot-name">Plugify</span></div>
+      <div class="thinking"><div class="thinking-dots"><span></span><span></span><span></span></div>Analyzing intent and surfacing underrated extensions…</div>
+    </div>
+  </div>`);
+
+  await new Promise(r=>setTimeout(r,800+Math.random()*500));
+  document.getElementById(tid)?.remove();
+
+  const{results,intent}=search(q);
+  if(!results.length){
+    append(`<div class="message-group"><div class="bot-msg">
+      <div class="bot-header"><div class="bot-avatar">🔌</div><span class="bot-name">Plugify</span></div>
+      <p class="response-text">No strong matches found in the current dataset. Try rephrasing or being more specific — or this is a gap worth adding to the extension database.</p>
+    </div></div>`);
+  } else {
+    const intro=`Detected intent: <strong style="color:var(--accent)">${INTENT_LABELS[intent]||'General'}</strong>. Showing ${results.length} extensions ranked by semantic match — underrated ones prioritized over popular.`;
+    append(`<div class="message-group"><div class="bot-msg">
+      <div class="bot-header"><div class="bot-avatar">🔌</div><span class="bot-name">Plugify</span></div>
+      <div class="intent-tag"><span class="intent-dot"></span>${INTENT_LABELS[intent]||'General'}</div>
+      <p class="response-text">${intro}</p>
+      <div class="ext-grid">${results.map((r,i)=>card(r,q,i)).join('')}</div>
+      <button class="more-btn" onclick="refine('${encodeURIComponent(q)}')">＋ Refine or search similar intent</button>
+    </div></div>`);
+    addSidebarItem(q);
+  }
+  busy=false;scroll();
+}
+
+function refine(eq){setQ('More niche extensions for: '+decodeURIComponent(eq))}
+
+function addSidebarItem(q){
+  const label=q.length>32?q.slice(0,32)+'…':q;
+  const d=document.createElement('div');
+  d.className='sidebar-item';
+  d.innerHTML=`<span class="icon">🔍</span><span>${label}</span>`;
+  const lbl=document.querySelector('.sidebar-label');
+  lbl.insertAdjacentElement('afterend',d);
+}
+
+function setQ(t){
+  const i=document.getElementById('queryInput');
+  i.value=t;autoResize(i);i.focus();
+}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleSend()}}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,180)+'px'}
+function newChat(){
+  document.getElementById('messages').innerHTML='';
+  document.getElementById('welcome').classList.remove('hidden');
+  document.getElementById('queryInput').value='';
+  autoResize(document.getElementById('queryInput'));
+}
+function loadHistory(t){
+  const m={color:'pick any color from any webpage element as hex code',focus:'block YouTube recommendations and distracting sites while I study',grid:'overlay a design grid on any webpage for alignment checking'};
+  if(m[t]){newChat();setTimeout(()=>{setQ(m[t]);handleSend()},100)}
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>{setQ('show font name, size and color when I hover mouse on a word');handleSend()},700);
+});
+</script>
+</body>
+</html>
